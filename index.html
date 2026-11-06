@@ -767,6 +767,14 @@ body { padding-top: 52px; }
   gap: 12px;
   margin-bottom: 16px;
 }
+.gate-email { margin-bottom: 16px; }
+.gate-free {
+  display: block; margin: 18px auto 0; background: none; border: 0; cursor: pointer;
+  color: var(--gold); font-family: 'Crimson Pro', serif; font-size: 1.05rem;
+  text-decoration: underline; text-underline-offset: 4px; touch-action: manipulation;
+}
+.gate-free:hover, .gate-free:focus-visible { color: var(--bone); }
+.gate-free:focus-visible, .gate-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .gate-field {
   display: flex;
   flex-direction: column;
@@ -1447,8 +1455,13 @@ body { padding-top: 52px; }
         <input class="gate-input" id="gateLast" type="text" placeholder="Last..." maxlength="30" autocomplete="family-name">
       </div>
     </div>
+    <div class="gate-field gate-email">
+      <label class="gate-label" for="gateEmail">Email</label>
+      <input class="gate-input" id="gateEmail" type="email" placeholder="you@yours.com" maxlength="120" autocomplete="email" inputmode="email">
+    </div>
     <button class="gate-btn" id="gateBtn">Enter the Arena →</button>
-    <p class="gate-note">Your information stays on your device only</p>
+    <p class="gate-note">Your information stays on your device only. Nothing is sent anywhere.</p>
+    <button type="button" class="gate-free" id="gateFree">Not ready? Try Man in the Mirror free</button>
   </div>
 </div>
 
@@ -1591,6 +1604,21 @@ body { padding-top: 52px; }
     var FIRST_KEY = "db_first";
     var LAST_KEY  = "db_last";
     var NM_KEY    = "db_nm";
+    var EMAIL_KEY = "db_email"; // soft gate (11/6): stored on this device only, never sent
+    var FREE_KEY  = "t1_1";     // Man in the Mirror stays open as the free sample
+    function okEmail(v) { return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(v); }
+    window._gateHasEntry = function() {
+      try {
+        var f = localStorage.getItem(FIRST_KEY), l = localStorage.getItem(LAST_KEY), m = localStorage.getItem(EMAIL_KEY);
+        return !!(f && l && m && f.trim() && l.trim() && okEmail(m.trim()));
+      } catch(e) { return !!window._gateSession; }
+    };
+    window._gateShow = function(pendingKey) {
+      window._gatePending = pendingKey || null;
+      var gate = document.getElementById("entryGate");
+      if (gate) { gate.classList.remove("hiding"); gate.style.display = "flex"; }
+      var fi = document.getElementById("gateFirst"); if (fi) { try { fi.focus(); } catch(e) {} }
+    };
 
     window._gateEnter = function() {
       try {
@@ -1601,21 +1629,29 @@ body { padding-top: 52px; }
 
         var first = firstIn.value.trim();
         var last  = lastIn.value.trim();
+        var emailIn = document.getElementById("gateEmail");
+        var email = emailIn ? emailIn.value.trim() : "";
 
         if (!first) { firstIn.focus(); firstIn.style.borderColor = '#C9170A'; setTimeout(function(){ firstIn.style.borderColor=''; }, 1200); return; }
         if (!last)  { lastIn.focus();  lastIn.style.borderColor  = '#C9170A'; setTimeout(function(){ lastIn.style.borderColor='';  }, 1200); return; }
+        if (emailIn && !okEmail(email)) { emailIn.focus(); emailIn.style.borderColor = '#C9170A'; setTimeout(function(){ emailIn.style.borderColor=''; }, 1200); return; }
 
         try {
           localStorage.setItem(FIRST_KEY, first);
           localStorage.setItem(LAST_KEY,  last);
           localStorage.setItem(NM_KEY, first + " " + last);
+          localStorage.setItem(EMAIL_KEY, email);
         } catch(storageErr) {
+          window._gateSession = true;
           // Storage blocked/full — still let the user through this session
           console.warn('Could not persist name to storage:', storageErr);
         }
 
+        window._gateSession = true;
         gate.style.display = "none";
         if (typeof refreshNav === 'function') { try { refreshNav(); } catch(e) {} }
+        var pend = window._gatePending; window._gatePending = null;
+        if (pend && typeof openCourse === 'function') { try { openCourse(pend); } catch(e) {} }
       } catch(enterErr) {
         console.error('Gate enter failed:', enterErr);
       }
@@ -1627,14 +1663,23 @@ body { padding-top: 52px; }
         var firstIn = document.getElementById("gateFirst");
         var lastIn  = document.getElementById("gateLast");
         var btn     = document.getElementById("gateBtn");
+        var emailIn = document.getElementById("gateEmail");
+        var freeBtn = document.getElementById("gateFree");
+        if (freeBtn) freeBtn.addEventListener("click", function() {
+          window._gatePending = null;
+          if (gate) gate.style.display = "none";
+          if (typeof openCourse === 'function') openCourse(FREE_KEY);
+        });
 
         try {
           var f = localStorage.getItem(FIRST_KEY);
           var l = localStorage.getItem(LAST_KEY);
-          if (f && l && f.trim() && l.trim()) {
+          var m = localStorage.getItem(EMAIL_KEY);
+          if (m && emailIn) emailIn.value = m;
+          if (window._gateHasEntry()) {
             if (gate) gate.style.display = "none";
             if (typeof refreshNav === 'function') { try { refreshNav(); } catch(e) {} }
-            return;
+            // keep going: the button still needs wiring for after a logout
           }
           if (f && firstIn) firstIn.value = f;
           if (l && lastIn)  lastIn.value  = l;
@@ -1652,7 +1697,7 @@ body { padding-top: 52px; }
           window._gateEnter();
         }, { passive: false });
 
-        [firstIn, lastIn].forEach(function(inp) {
+        [firstIn, lastIn, emailIn].forEach(function(inp) {
           if (!inp) return;
           inp.addEventListener("keydown", function(e) {
             if (e.key === "Enter" || e.keyCode === 13) window._gateEnter();
@@ -2000,6 +2045,16 @@ function openCourse(key) {
   }
 }
 
+/* Soft gate (11/6): every course except Man in the Mirror asks for name and email first.
+   Client side only, stored in this browser. This is not security: real gating is the member portal. */
+(function() {
+  var _openCourse = openCourse;
+  openCourse = function(key) {
+    if (key !== "t1_1" && window._gateHasEntry && !window._gateHasEntry() && !window._gateSession) { window._gateShow(key); return; }
+    return _openCourse(key);
+  };
+})();
+
 function closeCourse() {
   var overlay = document.getElementById("courseOverlay");
   overlay.classList.remove("open");
@@ -2075,6 +2130,8 @@ function doLogout() {
   try { localStorage.removeItem("db_first"); } catch(e) {}
   try { localStorage.removeItem("db_last"); } catch(e) {}
   try { localStorage.removeItem("db_nm"); } catch(e) {}
+  try { localStorage.removeItem("db_email"); } catch(e) {}
+  window._gateSession = false;
   // Show the gate again
   var gate = document.getElementById("entryGate");
   if (gate) {
