@@ -1422,7 +1422,7 @@ body { padding-top: 52px; }
 <!-- ════ ENTRY GATE ════ -->
 <div id="entryGate">
   <!-- Admin access button -->
-  <button id="adminGateBtn" onclick="window._openAdminLogin()" style="
+  <button id="adminGateBtn" hidden onclick="window._openAdminLogin()" style="
     position:absolute;top:18px;right:20px;
     background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.25);
     color:rgba(201,168,76,0.7);padding:7px 16px;border-radius:3px;cursor:pointer;
@@ -1431,6 +1431,7 @@ body { padding-top: 52px; }
   " onmouseover="this.style.borderColor=&#39;rgba(201,168,76,0.6)&#39;;this.style.color=&#39;#C9A84C&#39;" onmouseout="this.style.borderColor=&#39;rgba(201,168,76,0.25)&#39;;this.style.color=&#39;rgba(201,168,76,0.7)&#39;">
     ⚙ Admin
   </button>
+  <script>/* Admin button shows only at the #admin address, not to members */(function(){var b=document.getElementById('adminGateBtn');function t(){if(b)b.hidden=location.hash!=='#admin';}t();window.addEventListener('hashchange',t);})();</script>
   <div class="gate-inner">
     <span class="gate-crest">⚔</span>
     <p class="gate-ey">The Unstuck Brotherhood</p>
