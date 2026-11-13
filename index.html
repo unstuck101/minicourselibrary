@@ -2179,7 +2179,9 @@ var CM=[
 
 
 var TOTAL_MAX=CM.reduce(function(s,c){return s+c.xpMax},0);
-var RANKS=[{nm:"Wanderer",xp:0},{nm:"Seeker",xp:1000},{nm:"Warrior",xp:4000},{nm:"Knight",xp:8000},{nm:"King",xp:14000}];
+// Masculinity Path ranks (2026-11-13). Old five tiers map cleanly by XP: Wanderer to Brother, Seeker to Squire,
+// Warrior and Knight to Watchman, King stays King. Rank is computed from saved XP, so no stored progress changes.
+var RANKS=[{nm:"Brother",xp:0},{nm:"Squire",xp:1000},{nm:"Watchman",xp:4000},{nm:"King",xp:14000}];
 var COLORS=["#C9A84C","#9B7BC8","#D97B55","#4CAF75","#5B9BD5","#E8574E","#58B09C","#E8CC7A"];
 var DEMO=[
   {nm:"Marcus",col:"#9B7BC8",pct:42,act:3,xp:Math.round(0.42*TOTAL_MAX)},
@@ -2274,14 +2276,14 @@ function renderDash(){
 
   // Rank bar
   document.getElementById("rkFi").style.width=getRkP(d.xp)+"%";
-  for(var i=0;i<5;i++){
+  for(var i=0;i<RANKS.length;i++){
     var rl=document.getElementById("rn"+i);var rd=document.getElementById("rd"+i);
     rl.classList.remove("cur");rd.classList.remove("lit","cur");
     if(i<rki)rd.classList.add("lit");
     if(i===rki){rd.classList.add("cur");rl.classList.add("cur");}
   }
   var nx=RANKS[rki+1];
-  document.getElementById("rkNx").textContent=nx?"Next: "+nx.nm+" — "+(nx.xp-d.xp).toLocaleString()+" more XP":"You have reached the highest rank. King.";
+  document.getElementById("rkNx").textContent=nx?"Next: "+nx.nm+", "+(nx.xp-d.xp).toLocaleString()+" more XP":"You have reached the highest rank. King.";
 
   // Ring
   var circ=408.41;
@@ -2523,7 +2525,7 @@ function tog(id){var el=document.getElementById(id);if(!el)return;el.classList.t
 window.tog=tog;
 
 // ════ BROTHERHOOD ════
-function brRk(pct){if(pct>=90)return"King";if(pct>=65)return"Knight";if(pct>=40)return"Warrior";if(pct>=15)return"Seeker";return"Wanderer";}
+function brRk(pct){if(pct>=90)return"King";if(pct>=40)return"Watchman";if(pct>=15)return"Squire";return"Brother";}
 
 function getLB(){
   var brs=S.gj("db_brs",DEMO);
@@ -2644,7 +2646,7 @@ document.addEventListener("DOMContentLoaded",function(){
   var ADMIN_CREDS_KEY = 'unstuck_admins';
   var MEMBERS_KEY     = 'unstuck_members';
   var ADMIN_SESSION   = 'unstuck_admin_session';
-  var DEFAULT_ADMIN   = { username:'admin', password:'unstuck2024', name:'Travis Ala', role:'Super Admin' };
+  var DEFAULT_ADMIN   = { username:'admin', password:'unstuck2024', name:'@MRUNSTUCK', role:'Super Admin' };
 
   var COURSE_PREFIXES = ['mitm','bc','ac','wf','trigger','wc','watch'];
   var COURSE_NAMES    = ['Man in the Mirror','The Brotherhood Code','The Armor Check','The Watchfire Challenge','Trigger ≠ Truth','Wisdom Compass','Watchtower Father'];
@@ -3222,7 +3224,7 @@ document.addEventListener("DOMContentLoaded",function(){
     <div class="id-av" id="idAv">?</div>
     <div>
       <div class="id-nm" id="idNm">Unnamed Warrior</div>
-      <div class="id-rk" id="idRk">Rank: Wanderer</div>
+      <div class="id-rk" id="idRk">Rank: Brother</div>
       <div class="id-st" id="idSt">0 courses active · 0 completed</div>
     </div>
     <div class="id-sts">
@@ -3234,15 +3236,15 @@ document.addEventListener("DOMContentLoaded",function(){
   <!-- Rank bar -->
   <div class="rk-sec">
     <div class="rk-row">
-      <span class="rk-lb cur" id="rn0">Wanderer</span><span class="rk-lb" id="rn1">Seeker</span>
-      <span class="rk-lb" id="rn2">Warrior</span><span class="rk-lb" id="rn3">Knight</span><span class="rk-lb" id="rn4">King</span>
+      <span class="rk-lb cur" id="rn0">Brother</span><span class="rk-lb" id="rn1">Squire</span>
+      <span class="rk-lb" id="rn2">Watchman</span><span class="rk-lb" id="rn3">King</span>
     </div>
     <div class="rk-tr"><div class="rk-fi" id="rkFi" style="width:0%"></div></div>
     <div class="rk-ds">
       <div class="rd cur" id="rd0"></div><div class="rd" id="rd1"></div><div class="rd" id="rd2"></div>
-      <div class="rd" id="rd3"></div><div class="rd" id="rd4"></div>
+      <div class="rd" id="rd3"></div>
     </div>
-    <div class="rk-nx" id="rkNx">Next: Seeker — 1,000 more XP</div>
+    <div class="rk-nx" id="rkNx">Next: Squire, 1,000 more XP</div>
   </div>
 
   <!-- Overview ring -->
